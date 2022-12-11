@@ -14,12 +14,14 @@ import (
 	"time"
 )
 
+// taken from certgrabber
 func handlErrFatal(err error) {
 	if err != nil {
 		log.Fatal("[!] ", err)
 	}
 }
 
+// taken from certgrabber
 func getCerts(host string) []*x509.Certificate {
 	log.Printf("[*] retrieving cert(s) from %s", host)
 	// not bothered about verification of cert
@@ -31,6 +33,7 @@ func getCerts(host string) []*x509.Certificate {
 	return conn.ConnectionState().PeerCertificates
 }
 
+// taken from certgrabber
 func processCerts(certs []*x509.Certificate) []string {
 	m := make(map[string]bool)
 	var hostnames []string
@@ -41,13 +44,10 @@ func processCerts(certs []*x509.Certificate) []string {
 	for _, cert := range certs {
 		//fmt.Printf("Subject:   %v\n", cert.Subject)
 		for _, _h := range cert.DNSNames {
-
 			if m[_h] != true && !strings.HasPrefix(_h, "*") {
 				m[_h] = true
 				hostnames = append(hostnames, _h)
-			} //else if strings.HasPrefix(_h, "*") {
-			//fmt.Println("[-] skipping:", _h)
-			//}
+			}
 		}
 	}
 	sort.Strings(hostnames)
@@ -80,7 +80,7 @@ func simpleNoSNI(ipStr string, url string, follow bool) (*http.Response, error) 
 		},
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				// redirect all connections to 127.0.0.1
+				// make the requests to this IP instead
 				addr = ipStr + addr[strings.LastIndex(addr, ":"):]
 				return dialer.DialContext(ctx, network, addr)
 			},
@@ -91,54 +91,8 @@ func simpleNoSNI(ipStr string, url string, follow bool) (*http.Response, error) 
 		return nil, err
 	}
 	return res, nil
-
 }
-func NoSNI(ipStr string, hostname string, url string) *http.Response {
 
-	client := &http.Client{
-		// adapted from http.DefaultTransport
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			TLSClientConfig: &tls.Config{
-				ServerName:         ipStr,
-				InsecureSkipVerify: true,
-				VerifyConnection: func(cs tls.ConnectionState) error {
-					opts := x509.VerifyOptions{
-						DNSName:       hostname,
-						Intermediates: x509.NewCertPool(),
-					}
-					for _, cert := range cs.PeerCertificates[1:] {
-						opts.Intermediates.AddCert(cert)
-					}
-					_, err := cs.PeerCertificates[0].Verify(opts)
-					return err
-				},
-			},
-		},
-	}
-
-	res, err := client.Get(url)
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return nil
-	}
-	defer res.Body.Close()
-	//body, err := io.ReadAll(res.Body)
-	//headers := res.Header
-	//fmt.Printf("%+v\n", headers)
-	//fmt.Println(string(body))
-	return res
-}
 func main() {
 	port := "443"
 	if len(os.Args) < 2 {
@@ -162,7 +116,6 @@ func main() {
 	log.Printf("Found %d unique domains: %+v\n", len(hostnames), hostnames)
 	for _, host := range hostnames {
 		url := `https://` + host + `:` + port
-		//NoSNI(firstIP, host, url)
 		response, err := simpleNoSNI(firstIP, url, false)
 		if err == nil {
 			log.Printf("[+] status: %d, host: %s\n", response.StatusCode, host)
@@ -170,5 +123,4 @@ func main() {
 		// log.Printf("[-] host: %s got error: %v", host, err)
 		//}
 	}
-
 }
