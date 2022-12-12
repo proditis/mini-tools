@@ -39,7 +39,7 @@ func main() {
 	if len(os.Args) == 3 {
 		base = os.Args[2]
 	}
-	req, e := http.NewRequest("HEAD", URI, nil)
+	req, e := http.NewRequest("GET", URI, nil)
 	if e != nil {
 		log.Fatalln(e)
 	}
@@ -47,28 +47,37 @@ func main() {
 	if e != nil {
 		log.Fatalln(e)
 	}
-	println("[+] status:", res.StatusCode)
+	fmt.Printf("[+] Checking %s status: %d for CSP: ", URI, res.StatusCode)
 	policy := res.Header.Get("content-security-policy")
 	if strings.TrimSpace(policy) == "" {
-		log.Fatalln("[-] No Content-Security-Policy header found")
+		println("not found")
+		os.Exit(1)
 	} else {
-		println("[+] Found Content-Security-Policy")
+		println("found")
 	}
 
 	matches := make(map[string]bool)
 	for _, element := range matchIps(policy) {
-		matches[element] = true
-	}
-	for _, element := range matchHostnames(policy) {
-		matches[element] = true
-	}
-	for _, element := range matchUrls(policy) {
-		matches[element] = true
-	}
-	fmt.Println("[+] Found", len(matches), "entries")
-	for element, _ := range matches {
 		if strings.Contains(element, base) {
-			fmt.Println(element)
+			matches[strings.Replace(element, `;`, ``, -1)] = true
 		}
+	}
+	//for _, element := range matchHostnames(policy) {
+	//	if strings.Contains(element, base) {
+	//		matches[strings.Replace(element, `;`, ``, -1)] = true
+	//	}
+	//}
+	for _, element := range matchUrls(policy) {
+		if strings.Contains(element, base) {
+			matches[strings.Replace(element, `;`, ``, -1)] = true
+		}
+	}
+	fmt.Printf("[+] Found %d entries", len(matches))
+	if base != "" {
+		fmt.Printf(" for base string [%s]", base)
+	}
+	println()
+	for element, _ := range matches {
+		fmt.Println(element)
 	}
 }
