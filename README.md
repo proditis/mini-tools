@@ -18,5 +18,5 @@ given word)
 
 **example**
 ```
-cspparse https://app.google.com
+cspparse https://intigriti.com
 ```
