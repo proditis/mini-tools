@@ -11,7 +11,9 @@ import (
 	"strings"
 )
 
-var version = "X.X.X" // populated by build script
+const version = "X.X.X" // populated by build script
+const scriptname = "certnames"
+
 // holds the args supplied to the program
 type commandArgs struct {
 	Debug          bool
@@ -21,10 +23,10 @@ type commandArgs struct {
 
 // Display usage then exit
 func usage() {
-	usage := `Usage: certnames [Options] files`
+	usage := `Usage: ` + scriptname + ` [Options] files`
 	usage += `
 Extracts Subject Alt Names from x509 PEM format certificate(s) from a list of files
-  certnames v` + version + `
+   ` + scriptname + ` v` + version + `
 Options:
   -h, --help    show this help message and exit
   -s, --subject include subject display
