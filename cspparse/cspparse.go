@@ -51,7 +51,7 @@ func main() {
 	policy := res.Header.Get("content-security-policy")
 	if strings.TrimSpace(policy) == "" {
 		println("not found")
-		os.Exit(1)
+		os.Exit(0)
 	} else {
 		println("found")
 	}
