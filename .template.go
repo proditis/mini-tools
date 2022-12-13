@@ -1,19 +1,15 @@
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"log"
-	"net"
 	"os"
-	"strings"
 )
 
 const version = "X.X.X" // populated by build script
 const scriptname = "certnames"
-const shortDescription = "Extracts DNS Names from x509 PEM certificate(s)"
+const shortDescription = "Extracts Subject Alt Names from x509 PEM format certificate(s) from a list of files"
 
 // holds the args supplied to the program
 type commandArgs struct {
@@ -24,6 +20,7 @@ type commandArgs struct {
 
 // Display usage then exit
 func usage() {
+	//usage := `Usage: ` + scriptname + ` [Options] files`
 	usage := scriptname + ` v` + version + `
    ` + shortDescription + `
 
@@ -47,20 +44,9 @@ func handlErrFatal(err error) {
 // Check that the args passed are valid, returns either the host string or shows usage
 func checkArgs() {
 	if len(os.Args) < 2 {
-		fmt.Fprint(flag.CommandLine.Output(), "[ERR] Missing pem filename\n")
+		fmt.Fprint(flag.CommandLine.Output(), "Missing pem filename\n")
 		usage()
 	}
-}
-
-func lookupHelper(DNSNames string) []string {
-	var ipStr []string
-	ips, err := net.LookupIP(DNSNames)
-	if err == nil {
-		for _, lip := range ips {
-			ipStr = append(ipStr, lip.String())
-		}
-	}
-	return ipStr
 }
 func main() {
 	args := commandArgs{}
@@ -78,37 +64,6 @@ func main() {
 	checkArgs()
 
 	for _, certFile := range flag.Args() {
-		if args.Debug {
-			fmt.Println(certFile)
-		}
-
-		bs, err := os.ReadFile(certFile) // handle error
-		if err != nil {
-			fmt.Fprintf(flag.CommandLine.Output(), "File %s not found", certFile)
-			continue
-		}
-
-		block, _ := pem.Decode(bs)
-		if block == nil {
-			log.Println("failed to parse PEM block containing the public key")
-			continue
-		}
-		cert, err := x509.ParseCertificate(block.Bytes) // handle error
-		if args.IncludeSubject {
-			fmt.Printf("# Subject:   %v\n", cert.Subject)
-		}
-		//fmt.Printf("DNS names: %+v\n", cert.DNSNames)
-		for i := 0; i < len(cert.DNSNames); i++ {
-			fmt.Fprintf(flag.CommandLine.Output(), "%s", cert.DNSNames[i])
-			if args.DoDNS {
-				ips := lookupHelper(cert.DNSNames[i])
-				if len(ips) > 0 {
-					fmt.Fprintf(flag.CommandLine.Output(), " %s", strings.Join(ips, " "))
-				}
-			}
-			fmt.Fprintln(flag.CommandLine.Output(), "")
-		}
-		fmt.Fprintln(flag.CommandLine.Output(), "")
 	}
 
 }
