@@ -41,11 +41,13 @@ func main() {
 	}
 	req, e := http.NewRequest("GET", URI, nil)
 	if e != nil {
-		log.Fatalln("NewRequest:", e)
+		log.Print("NewRequest:", e)
+		os.Exit(0)
 	}
 	res, e := new(http.Client).Do(req)
 	if e != nil {
-		log.Fatalln("Do:", e)
+		log.Printf("Do:", e)
+		os.Exit(0)
 	}
 	fmt.Fprintf(os.Stderr, "[+] Checking %s status: %d for CSP: ", URI, res.StatusCode)
 	policy := res.Header.Get("content-security-policy")
