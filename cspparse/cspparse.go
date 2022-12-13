@@ -47,7 +47,7 @@ func main() {
 	if e != nil {
 		log.Fatalln("Do:", e)
 	}
-	fmt.Printf("[+] Checking %s status: %d for CSP: ", URI, res.StatusCode)
+	fmt.Fprintf(os.Stderr, "[+] Checking %s status: %d for CSP: ", URI, res.StatusCode)
 	policy := res.Header.Get("content-security-policy")
 	if strings.TrimSpace(policy) == "" {
 		println("not found")
@@ -72,11 +72,11 @@ func main() {
 			matches[strings.Replace(element, `;`, ``, -1)] = true
 		}
 	}
-	fmt.Printf("[+] Found %d entries", len(matches))
+	fmt.Fprintf(os.Stderr, "[+] Found %d entries", len(matches))
 	if base != "" {
-		fmt.Printf(" for base string [%s]", base)
+		fmt.Fprintf(os.Stderr, " for base string [%s]", base)
 	}
-	println()
+	fmt.Fprintln(os.Stderr, "")
 	for element, _ := range matches {
 		fmt.Println(element)
 	}
