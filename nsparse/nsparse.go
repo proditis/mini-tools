@@ -58,24 +58,41 @@ func isInteresting(line string) string {
 	}
 	return ""
 }
+func ParseTxtRecords(records []string) []string {
+	var txtHash []string
+	for _, entry := range records {
+		if strings.Contains(entry, "v=spf") {
+			txtHash = parseSpf(entry)
+			fmt.Println("SPF Record hosts:", parseSpf(entry))
+		} else if isInteresting(entry) != "" {
+			txtHash = append(txtHash, fmt.Sprintf("Interesting Record: %v => %s", entry, isInteresting(entry)))
+			fmt.Printf("Interesting Record: %v => %s\n", entry, isInteresting(entry))
+		}
+	}
+	return txtHash
+}
 
-func lookupDMARC(name string) {
+func lookupDMARC(name string) map[string]string {
+	DMARC := make(map[string]string)
 	var selectors = []string{"selector._domainkey", "_dmarc", "selector1._domainkey", "_domainkey"}
 	for _, selector := range selectors {
 		records, err := net.LookupTXT(selector + "." + name)
 		if err == nil {
 			for _, entry := range records {
+				DMARC[selector] = entry
 				fmt.Println("Found DMARC selector:", selector, "=>", entry)
 			}
 		}
 	}
+	return DMARC
 }
-func lookupNS(name string) []string {
-	var ns []string
+
+func lookupNS(name string) map[string]string {
+	ns := make(map[string]string)
 	records, err := net.LookupNS(name)
 	if err == nil {
 		for _, entry := range records {
-			ns = append(ns, strings.Trim(entry.Host, "."))
+			ns[strings.Trim(name, ".")] = strings.Trim(entry.Host, ".")
 			fmt.Println("NS:", entry.Host)
 		}
 	}
@@ -89,6 +106,29 @@ func main() {
 		}
 		fmt.Println("Querying for:", name)
 		NS := lookupNS(name)
+
+		// only do this if we dont get a DNS server
+		if len(NS) == 0 {
+			records, err := net.LookupTXT(name)
+			if err == nil {
+				fmt.Println("TXT:", records)
+			}
+			records, err = net.LookupHost(name)
+			if err == nil {
+				fmt.Println("A:", records)
+			}
+			cname, err := net.LookupCNAME(name)
+			if err == nil && cname != name {
+				fmt.Println("CNAME:", cname)
+			}
+			mx, err := net.LookupMX(name)
+			if err == nil {
+				for _, mxHost := range mx {
+					fmt.Println("MX:", mxHost.Host)
+
+				}
+			}
+		}
 		for _, nsServer := range NS {
 			r := &net.Resolver{
 				PreferGo: true,
@@ -102,13 +142,7 @@ func main() {
 			fmt.Println("Using dns:", nsServer)
 			records, err := r.LookupTXT(context.Background(), name)
 			if err == nil {
-				for _, entry := range records {
-					if strings.Contains(entry, "v=spf") {
-						fmt.Println("SPF Record hosts:", parseSpf(entry))
-					} else if isInteresting(entry) != "" {
-						fmt.Printf("Interesting Record: %v => %s\n", entry, isInteresting(entry))
-					}
-				}
+				ParseTxtRecords(records)
 			}
 
 			records, err = r.LookupHost(context.Background(), name)
