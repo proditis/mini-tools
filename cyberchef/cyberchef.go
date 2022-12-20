@@ -1,6 +1,8 @@
 package cyberchef
 
-//package main
+//
+// Mostly ported from the official https://github.com/gchq/CyberChef
+//
 
 import (
 	"errors"
