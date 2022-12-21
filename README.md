@@ -37,6 +37,7 @@ is implemented.
 ## `nsparse` (heavily experimental atm)
 Takes a domain performs dns lookups for interesting txt records
 along with other interesting queries (NS, A, MX, SOA) all in one go.
+**update**: found this little baby instead https://github.com/projectdiscovery/dnsx and gonna be focusing on it
 
 
 ## `sniprobe`
